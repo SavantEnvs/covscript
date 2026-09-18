@@ -1,0 +1,17 @@
+project: savantenvs/covscript
+target: cs-buggy-mhh-run-21
+
+cmds:
+  # File-input (CLI) target: feed the fuzz bytes as a CovScript source file to the interpreter,
+  # exercising the whole pipeline (lexer, parser, codegen, runtime/VM). CovScript has no built-in
+  # instruction-step limit or interrupt hook, and the language itself allows unbounded loops
+  # (`while(true) end`), so a generated script can genuinely run forever. Each exec is its own
+  # short-lived process here (not libFuzzer), so a plain per-exec timeout is the correct bound
+  # (no ITIMER_REAL/SIGALRM conflict — that only matters for in-process libFuzzer targets): cap
+  # each run so a hang input costs 3s, not the whole campaign (same pattern as armips).
+  - cmd: /mayhem/cs @@
+    timeout: 3
+
+testsuite:
+  - https://$MAYHEM_DOMAIN/$MAYHEM_PROJECT/$MAYHEM_TARGET/testsuite.tar
+  - file://mayhem/cs-buggy-mhh-run-21/testsuite
